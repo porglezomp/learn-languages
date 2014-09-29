@@ -17,22 +17,17 @@
                        a
                        (rest b)))))
 
-(defun do-merge (a b)
-  (merge-worker '() a b))
-
 (defun first-half (l)
   (subseq l 0 (floor (length l) 2)))
-
 (defun last-half (l)
   (subseq l (floor (length l) 2) (length l)))
 
 (defun merge-sort (l)
   (cond ((null l) nil)
         ((= (length l) 1) l)
-        (T (do-merge (merge-sort (first-half l))
-                     (merge-sort (last-half  l))))))
+        (T (merge-worker '()
+                         (merge-sort (first-half l))
+                         (merge-sort (last-half  l))))))
 
-(setq random-list (loop :repeat 500 :collect (random 1001)))
-(print random-list)
-(print "")
+(setq random-list (loop :for x := (random 1000001) :repeat 1000 :collect x))
 (print (merge-sort random-list))
