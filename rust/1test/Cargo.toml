@@ -1,0 +1,9 @@
+[package]
+
+name = "test1"
+version = "0.0.1"
+authors = [ "Caleb Jones" ]
+
+[[bin]]
+
+name = "test1"
