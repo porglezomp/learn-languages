@@ -1,0 +1,7 @@
+This is a text file
+
+It contains lots of text!
+
+Not actually LOTS, but some.
+Oh hey, I just discovered that emacs text-mode underlines typos.
+Spelling errors, etc. That's pretty cool.
