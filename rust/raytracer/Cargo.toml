@@ -1,0 +1,9 @@
+[package]
+
+name = "raytracer"
+version = "0.0.1"
+authors = ["Caleb Jones <bionicle.dragon@gmail.com>"]
+
+[dependencies.lodepng]
+
+git = "https://github.com/pornel/lodepng-rust.git"
