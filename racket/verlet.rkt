@@ -20,12 +20,21 @@
     (cons (nth list n) (except list n))))
 
 (define G 6.674e-11)
-(define particles '((1000 (1 0)) (1 (0 0))))
+(define particles
+  (let [(r (make-pseudo-random-generator))
+        (mass 1)]
+    (for/list [(i (range 200))]
+      (list mass
+            (list
+             (- (* (random r) 2) 1)
+             (- (* (random r) 2) 1))))))
+;;(define particles '((1000 (1 0)) (1 (0 0))))
 #|
 (define particles 
-  (for*/list [(x (range 3))
-              (y (range 3))]
-    (list 1 (list x y))))
+  (for*/list [(x (range 5))
+              (y (range 5))]
+    (list 1 (list (- (/ x 2.5) 1)
+                  (- (/ y 2.5) 1)))))
 |#
 (define dt 60)
 
@@ -73,13 +82,28 @@
     (list mass (vadd (vsub (vmul position 2) (second prev))
                      (vmul accel (square dt)))))))
 
+(define (output buf)
+  (display (for/list [(particle buf)]
+           (second particle)))
+  (newline))
+  
+
 (define (do-step prev cur n)
-  (write cur)
-  (newline)
+  (output cur)
+  (flush-output)
+  (sleep 0.02)
   (when (positive? n)
     (do-step cur
              (step prev cur)
              (- n 1))))
 
 (define (main)
-  (do-step particles particles 100))
+  (do-step particles particles 1000))
+
+(display "2d")
+(newline)
+(flush-output)
+(main)
+(display "done")
+(newline)
+(flush-output)
