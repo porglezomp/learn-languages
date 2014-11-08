@@ -72,6 +72,10 @@
       (list (item-function
              (range 2 7 2))))))))
 
+(define (tie? board)
+  (and (not (check-win board))
+       (apply none-equal? (cons null board))))
+
 (define (can-place-at? n board)
   (null? (nth board n)))
 
@@ -89,17 +93,20 @@
 (define (mainloop board turn)
   (print-board board)
   (let [(result (check-win board))]
-    (if result
-        (printf "~S wins!" result)
-        (let [(point (read))]
-          (if (not (number? point))
-              (begin (write "Please specify a number 1-9")
-                     (mainloop board turn))
-              (if (can-place-at? (- point 1) board)
-                  (mainloop (replace-at-n board (- point 1) turn)
-                            (if (equal? turn 'X) 'O 'X))
-                  (begin (write "You can't place there!")
-                         (mainloop board turn))))))))
+    (cond [result (printf "~S wins!" result)]
+          [(tie? board) (printf "Tie!")]
+          [else
+           (let [(point (read))]
+             (if (not (number? point))
+                 (begin (write "Please specify a number 1-9")
+                        (newline)
+                        (mainloop board turn))
+                 (if (can-place-at? (- point 1) board)
+                     (mainloop (replace-at-n board (- point 1) turn)
+                               (if (equal? turn 'X) 'O 'X))
+                     (begin (write "You can't place there!")
+                            (newline)
+                            (mainloop board turn)))))])))
 
 (define (start)
   (mainloop board 'X))
