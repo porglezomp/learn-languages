@@ -1,6 +1,9 @@
 #lang racket
 
-(define board (build-list 9 (const null)))
+(define (replace-at-n list n val)
+  (if (= n 0)
+      (cons val (rest list))
+      (cons (first list) (replace-at-n (rest list) (- n 1) val))))
 
 (define (nth list n)
   (if (= n 0)
@@ -11,14 +14,19 @@
           null
           (nth (rest list) (- n 1)))))
 
+;; Strange predicates
+
+;; none-equal? takes a value, and ensures that none
+;; of the following arguments are equal to it
 (define (none-equal? a . items)
   (if (null? items)
       #t
       (and
        (not (equal? a (first items)))
        (apply none-equal? (cons a (rest items))))))
-            
 
+;; all-equal? takes many arguments, and ensures that
+;; they are all equal
 (define (all-equal? . items)
   (if (null? items)
       #f
@@ -27,12 +35,6 @@
           (and
            (equal? (first items) (second items))
            (apply all-equal? (rest items))))))
-           
-
-(define (replace-at-n list n val)
-  (if (= n 0)
-      (cons val (rest list))
-      (cons (first list) (replace-at-n (rest list) (- n 1) val))))
 
 (define (first-true list)
   (if (null? list)
@@ -92,6 +94,9 @@
   
 (define (mainloop board turn)
   (print-board board)
+  (newline)
+  (printf "Score is: ~S" (score board))
+  (newline)
   (let [(result (check-win board))]
     (cond [result (printf "~S wins!" result)]
           [(tie? board) (printf "Tie!")]
@@ -108,5 +113,52 @@
                             (newline)
                             (mainloop board turn)))))])))
 
+(define (sum . items)
+  (apply + items))
+
+(define (score board)
+  ;; Count the number of Xs, Os, and Nulls in the list
+  (define (count-x-o l)
+    (define (worker x o n l)
+      (if (null? l)
+          (list x o n)
+          (cond [(equal? (first l) 'X)
+                 (worker (+ x 1) o n (rest l))]
+                [(equal? (first l) 'O)
+                 (worker x (+ o 1) n (rest l))]
+                [else (worker x o (+ n 1) (rest l))])))
+    (worker 0 0 0 l))
+  (define (count cnt lists)
+    (apply + (for/list [(list lists)]
+               (let* [(xon (count-x-o list))
+                      (x (first xon))
+                      (o (second xon))
+                      (n (third xon))]
+                 (cond [(and (= x cnt) (= o 0) (= n (- 3 cnt))) 1]
+                       [(and (= o cnt) (= x 0) (= n (- 3 cnt))) -1]
+                       [else 0])))))
+  (define (mapper indices)
+    (for/list [(ind indices)]
+      (map (lambda (n) (nth board n)) ind)))
+  (let [(lists
+         (mapper
+          (append
+           ;; Horizontal
+           (for/list [(start (range 0 9 3))]
+             (range start (+ start 3) 1))
+           ;; Vertical
+           (for/list [(start (range 3))]
+             (range start (+ start 7) 3))
+           ;; Diagonal from top right
+           (list (range 0 9 4))
+           ;; Diagonal from top left
+           (list (range 2 7 2)))))]
+    (sum 
+     (* 100 (count 3 lists))
+     (* 10 (count 2 lists))
+     (* 1 (count 1 lists)))))
+    
+
+(define board (build-list 9 (const null)))
 (define (start)
   (mainloop board 'X))
