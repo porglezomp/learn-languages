@@ -78,6 +78,9 @@
   (and (not (check-win board))
        (apply none-equal? (cons null board))))
 
+(define (done? board)
+  (or (tie? board) (check-win board)))
+
 (define (can-place-at? n board)
   (null? (nth board n)))
 
@@ -95,13 +98,13 @@
 (define (mainloop board turn)
   (print-board board)
   (newline)
-  (printf "Score is: ~S" (score board))
-  (newline)
   (let [(result (check-win board))]
     (cond [result (printf "~S wins!" result)]
           [(tie? board) (printf "Tie!")]
           [else
-           (let [(point (read))]
+           (let [(point (if (equal? turn 'X) 
+                            (read)
+                            (+ (cdr (minimax board turn 6)) 1)))]
              (if (not (number? point))
                  (begin (write "Please specify a number 1-9")
                         (newline)
@@ -158,6 +161,31 @@
      (* 10 (count 2 lists))
      (* 1 (count 1 lists)))))
     
+(define (minimax board player depth)
+  (define (cmax list)
+    (if (null? (rest list))
+        (first list)
+        (let [(rest-max (cmax (rest list)))]
+          (if (>= (car (first list)) (car rest-max))
+              (first list)
+              rest-max))))
+  (define (cmin list)
+    (if (null? (rest list))
+        (first list)
+        (let [(rest-min (cmin (rest list)))]
+          (if (<= (car (first list)) (car rest-min))
+              (first list)
+              rest-min))))
+  (if (or (done? board) (= depth 0))
+      (score board)
+      (let [(next-player (if (equal? player 'X) 'O 'X))
+            (optimize (if (equal? player 'X) cmax cmin))]
+          (optimize (for/list [(index (range 9))
+                               #:when (can-place-at? index board)]
+                      (let [(next (minimax (replace-at-n board index player) next-player (- depth 1)))]
+                        (if (pair? next)
+                            (cons (car next) index)
+                            (cons next index))))))))
 
 (define board (build-list 9 (const null)))
 (define (start)
