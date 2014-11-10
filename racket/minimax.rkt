@@ -103,8 +103,8 @@
           [(tie? board) (printf "Tie!")]
           [else
            (let [(point (if (equal? turn 'X) 
-                            (read)
-                            (+ (cdr (minimax board turn 6)) 1)))]
+                            (start)
+                            (+ (cdr (minimax board turn 2)) 1)))]
              (if (not (number? point))
                  (begin (write "Please specify a number 1-9")
                         (newline)
