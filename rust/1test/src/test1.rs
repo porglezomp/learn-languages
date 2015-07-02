@@ -1,4 +1,4 @@
-fn fibo_rec(n: int) -> int {
+fn fibo_rec(n: u64) -> u64 {
     match n {
         0 => 0,
         1 => 1,
@@ -6,11 +6,11 @@ fn fibo_rec(n: int) -> int {
     }
 }
 
-fn fibo_iter(n: uint) -> u64 {
+fn fibo_iter(n: u64) -> u64 {
     let mut a = 0u64;
     let mut b = 1u64;
     let mut c : u64;
-    for _ in range(0, n) {
+    for _ in 0..n {
         c = b;
         b = a + b;
         a = c;
@@ -19,10 +19,10 @@ fn fibo_iter(n: uint) -> u64 {
 }
 
 fn main() {
-    for i in range(0i, 25i) {
+    for i in 0..25 {
         println!("{}", fibo_rec(i));
     }
-    for i in range(0u, 100u) {
+    for i in 0..100 {
         println!("{}", fibo_iter(i));
     }
 }
