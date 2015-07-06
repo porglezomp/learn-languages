@@ -26,11 +26,11 @@ the focus to either side. If it's not possible to move
 the cursor any further, the zipper will be left alone.
 \begin{code}
 left :: Zipper a -> Zipper a
-left (Zipper before (c:after)) = Zipper (c:before) after
+left (Zipper (c:before) after) = Zipper before (c:after)
 left z = z
 
 right :: Zipper a -> Zipper a
-right (Zipper (n:before) after) = Zipper before (n:after)
+right (Zipper before (n:after)) = Zipper (n:before) after
 right z = z
 \end{code}
 

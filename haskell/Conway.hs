@@ -15,8 +15,9 @@ instance Comonad L.Zipper where
 instance Comonad Zipper where
   coreturn = cursor
   cojoin (Zipper z) = fmap Zipper $ Zipper $ roll $ roll z
-    where roll a = L.Zipper (tail $ iterate (fmap L.right) a)
-                   (iterate (fmap L.left) a)
+    where roll a = L.Zipper
+                   (tail $ iterate (fmap L.left) a)
+                   (iterate (fmap L.right) a)
 
 conway :: Zipper Bool -> Bool
 conway z = if not self
@@ -40,10 +41,10 @@ surround (Zipper (L.Zipper a b)) i = Zipper $ L.Zipper
         surround' (L.Zipper x y) = L.Zipper (x ++ repeat i) (y ++ repeat i)
 
 startState :: Zipper Bool
-startState = left . left . left . down . down . down $ surround center False
+startState = surround center False
   where center = fromGrid [[False, True, False]
                           ,[False, False, True]
-                          ,[True,  True,  True]
+                          ,[True, True, True]
                           ]
 
 printGrid :: Int -> Int -> Zipper Bool -> IO ()

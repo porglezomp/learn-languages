@@ -23,10 +23,10 @@ laziness and map left and right over each individal row of the
 grid.
 \begin{code}
 up :: Zipper a -> Zipper a
-up (Zipper z) = Zipper $ L.right z
+up (Zipper z) = Zipper $ L.left z
 
 down :: Zipper a -> Zipper a
-down (Zipper z) = Zipper $ L.left z
+down (Zipper z) = Zipper $ L.right z
 
 left :: Zipper a -> Zipper a
 left (Zipper z) = Zipper $ fmap L.left z
