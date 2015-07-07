@@ -114,14 +114,30 @@ apple x = banana $ \f -> banana (unicorn . f) x
 
 -- Exercise 14
 -- Relative Difficulty: 6
+
+-- Thought process using a concrete example.
+-- moppy' :: [a] -> (a -> Maybe b) -> Maybe [b]
+-- moppy' (x:xs) f = case f x of
+--   (Just y) -> case moppy' xs f of
+--     (Just rest) -> Just $ y : rest
+--     Nothing -> Nothing
+--   Nothing  -> Nothing
+-- Which is equivalent to,
+-- moppy' (x:xs) f = case f x of
+--   (Just y) -> banana (\ys -> unicorn $ y : ys) $ moppy' xs f
+--   Nothing -> Nothing
+-- Which finally reduces to,
+-- moppy' (x:xs) f = banana innerlist $ f x
+--   where innerlist y = banana (\ys -> unicorn $ y : ys) $ moppy' xs f
 moppy :: (Misty m) => [a] -> (a -> m b) -> m [b]
-moppy = error "todo"
+moppy (x:xs) f = banana innerlist $ f x
+  where innerlist y = banana (\ys -> unicorn $ y : ys) $ moppy xs f
 
 -- Exercise 15
 -- Relative Difficulty: 6
 -- (bonus: use moppy)
 sausage :: (Misty m) => [m a] -> m [a]
-sausage = error "todo"
+sausage l = moppy l id
 
 -- Exercise 16
 -- Relative Difficulty: 6
@@ -142,7 +158,7 @@ banana4 :: (Misty m) => (a -> b -> c -> d -> e) -> m a -> m b -> m c -> m d -> m
 banana4 = error "todo"
 
 newtype State s a = State {
-  state :: (s -> (s, a))
+  state :: s -> (s, a)
   }
 
 -- Exercise 19
