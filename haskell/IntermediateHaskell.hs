@@ -85,13 +85,32 @@ instance Misty (EitherRight t) where
 
 -- Exercise 12
 -- Relative Difficulty: 3
+
+-- Thought process using a concrete example.
+-- jellybean' :: Maybe (Maybe a) -> Maybe a
+-- jellybean' Nothing = Nothing
+-- jellybean' (Just x) = x
+-- id :: a -> a, and here banana :: (a -> a) -> m a -> m a
+-- jellybean' = banana id
 jellybean :: (Misty m) => m (m a) -> m a
-jellybean x = error "todo"
+jellybean = banana id
 
 -- Exercise 13
 -- Relative Difficulty: 6
+
+-- Thought process using a concrete example.
+-- apple' :: Maybe a -> Maybe (a -> b) -> Maybe b
+-- apple' _ Nothing = Nothing
+-- apple' x (Just f) = banana f x
+-- Alternatively,
+-- apple' x f = g
+--     where g = case f of
+--          Nothing  -> Nothing
+--          (Just h) -> banana (unicorn . h) x
+-- Which, finally, reduces to:
+-- apple' x = banana (\g -> banana (unicorn . g) x)
 apple :: (Misty m) => m a -> m (a -> b) -> m b
-apple = error "todo"
+apple x = banana $ \f -> banana (unicorn . f) x
 
 -- Exercise 14
 -- Relative Difficulty: 6
