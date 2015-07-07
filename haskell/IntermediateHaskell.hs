@@ -142,20 +142,26 @@ sausage l = moppy l id
 -- Exercise 16
 -- Relative Difficulty: 6
 -- (bonus: use apple + furry')
+
+-- Thinking it through
+-- banana2 :: (Misty m) => (a -> (b -> c)) -> m a -> (m b -> m c)
+-- here, furry' :: (Misty m) -> (a -> (b -> c)) -> m a -> m (b -> c)
+-- then, apple can apply the m (b -> c) to the m b to produce an m c
 banana2 :: (Misty m) => (a -> b -> c) -> m a -> m b -> m c
-banana2 = error "todo"
+banana2 f x y = apple y $ furry' f x
 
 -- Exercise 17
 -- Relative Difficulty: 6
 -- (bonus: use apple + banana2)
 banana3 :: (Misty m) => (a -> b -> c -> d) -> m a -> m b -> m c -> m d
-banana3 = error "todo"
+banana3 f x y z = apple z $ banana2 f x y
 
 -- Exercise 18
 -- Relative Difficulty: 6
 -- (bonus: use apple + banana3)
-banana4 :: (Misty m) => (a -> b -> c -> d -> e) -> m a -> m b -> m c -> m d -> m e
-banana4 = error "todo"
+banana4 :: (Misty m) => (a -> b -> c -> d -> e)
+           -> m a -> m b -> m c -> m d -> m e
+banana4 f x y z w = apple w $ banana3 f x y z
 
 newtype State s a = State {
   state :: s -> (s, a)
