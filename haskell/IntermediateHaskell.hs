@@ -170,10 +170,14 @@ newtype State s a = State {
 -- Exercise 19
 -- Relative Difficulty: 9
 instance Fluffy (State s) where
-    furry = error "todo"
+  -- furry :: (a -> b) -> State s a -> State s b
+  -- takes state from s -> (s, a) to s -> (s, b)
+  furry f x = State $ (\(s, a) -> (s, f a)) . (state x)
 
 -- Exercise 20
 -- Relative Difficulty: 10
 instance Misty (State s) where
-  banana = error "todo"
-  unicorn = error "todo"
+  -- banana :: (a -> State s b) -> State s a -> State s b
+  banana f x = State $ (\(s, a) -> state (f a) s) . state x
+  -- unicorn :: a -> State s a
+  unicorn a = State $ \s -> (s, a)
