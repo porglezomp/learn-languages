@@ -1,3 +1,4 @@
+module Misty where
 
 class Fluffy f where
   furry :: (a -> b) -> f a -> f b
@@ -5,17 +6,20 @@ class Fluffy f where
 -- Exercise 1
 -- Relative Difficulty: 1
 instance Fluffy [] where
-  furry = error "todo"
+  furry _ []     = []
+  furry f (x:xs) = f x : furry f xs
 
 -- Exercise 2
 -- Relative Difficulty: 1
 instance Fluffy Maybe where
-  furry = error "todo"
+  furry f (Just x) = Just (f x)
+  furry _ Nothing  = Nothing
 
 -- Exercise 3
 -- Relative Difficulty: 5
 instance Fluffy ((->) t) where
-  furry = error "todo"
+  -- furry :: (a -> b) -> (t -> a) -> (t -> b)
+  furry = (.)
 
 newtype EitherLeft b a = EitherLeft (Either a b)
 newtype EitherRight a b = EitherRight (Either a b)
@@ -23,12 +27,15 @@ newtype EitherRight a b = EitherRight (Either a b)
 -- Exercise 4
 -- Relative Difficulty: 5
 instance Fluffy (EitherLeft t) where
-  furry = error "todo"
+  -- furry :: (a -> b) -> (EitherLeft t a) -> (EitherLeft t b)
+  furry f (EitherLeft (Left x))  = EitherLeft . Left $ f x
+  furry _ (EitherLeft (Right x)) = EitherLeft . Right $ x
 
 -- Exercise 5
 -- Relative Difficulty: 5
 instance Fluffy (EitherRight t) where
-  furry = error "todo"
+  furry _ (EitherRight (Left x))  = EitherRight . Left $ x
+  furry f (EitherRight (Right x)) = EitherRight . Right $ f x
 
 class Misty m where
   banana :: (a -> m b) -> m a -> m b
@@ -37,42 +44,49 @@ class Misty m where
   -- Relative Difficulty: 3
   -- (use banana and/or unicorn)
   furry' :: (a -> b) -> m a -> m b
-  furry' = error "todo"
+  furry' f = banana (unicorn . f)
 
 -- Exercise 7
 -- Relative Difficulty: 2
 instance Misty [] where
-  banana = error "todo"
-  unicorn = error "todo"
+  banana _ []     = []
+  banana f (x:xs) = f x ++ banana f xs
+  unicorn x = [x]
 
 -- Exercise 8
 -- Relative Difficulty: 2
 instance Misty Maybe where
-  banana = error "todo"
-  unicorn = error "todo"
+  banana _ Nothing  = Nothing
+  banana f (Just x) = f x
+  unicorn = Just
 
 -- Exercise 9
 -- Relative Difficulty: 6
 instance Misty ((->) t) where
-  banana = error "todo"
-  unicorn = error "todo"
+  -- banana :: (a -> t -> b) -> (t -> a) -> t -> b
+  banana f x t = f (x t) t
+  -- unicorn :: a -> t -> a
+  unicorn = const
 
 -- Exercise 10
 -- Relative Difficulty: 6
 instance Misty (EitherLeft t) where
-  banana = error "todo"
-  unicorn = error "todo"
+  -- banana :: (a -> EitherLeft t b) -> EitherLeft t a -> EitherLeft t b
+  banana f (EitherLeft (Left x))  = f x
+  banana _ (EitherLeft (Right x)) = EitherLeft . Right $ x
+  unicorn = EitherLeft . Left
 
 -- Exercise 11
 -- Relative Difficulty: 6
 instance Misty (EitherRight t) where
-  banana = error "todo"
-  unicorn = error "todo"
+  banana _ (EitherRight (Left x))  = EitherRight . Left $ x
+  banana f (EitherRight (Right x)) = f x
+  unicorn = EitherRight . Right
 
 -- Exercise 12
 -- Relative Difficulty: 3
 jellybean :: (Misty m) => m (m a) -> m a
-jellybean = error "todo"
+jellybean x = error "todo"
 
 -- Exercise 13
 -- Relative Difficulty: 6
