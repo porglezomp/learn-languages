@@ -4,38 +4,21 @@
 module ParseCSV where
 
 import Text.ParserCombinators.Parsec
-import Text.Parsec.Prim
+import Text.Parsec.Prim hiding (try)
 import Data.Functor.Identity
 
 csvFile :: GenParser Char st [[String]]
-csvFile =
-  do result <- many line
-     eof
-     return result
+csvFile = line `sepBy` eol
 
 line :: GenParser Char st [String]
-line =
-  do result <- cells
-     eol
-     return result
+line = cell `sepBy` char ','
 
-cells :: GenParser Char st [String]
-cells =
-  do first <- cellContent
-     next <- remainingCells
-     return (first : next)
-
-remainingCells :: GenParser Char st [String]
-remainingCells =
-  (char ',' >> cells)
-  <|> return []
-
-cellContent :: GenParser Char st String
-cellContent =
-  many (noneOf ",\n")
+cell :: GenParser Char st String
+cell = many (noneOf ",\n")
 
 eol :: ParsecT String u Identity Char
 eol = char '\n'
 
 parseCSV :: String -> Either ParseError [[String]]
 parseCSV = parse csvFile "(unknown)"
+
