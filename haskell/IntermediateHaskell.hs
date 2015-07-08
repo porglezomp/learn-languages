@@ -1,4 +1,4 @@
-module Misty where
+module IntermediateHaskell where
 
 class Fluffy f where
   furry :: (a -> b) -> f a -> f b
