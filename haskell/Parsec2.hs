@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 -- I figured this one out mostly on my own, and with docs
@@ -5,60 +6,45 @@
 module ParseJSON where
 
 import Text.Parsec
-import Control.Applicative ((<$>))
+import qualified Text.Parsec.Token as P
+import Text.Parsec.Language (haskellDef)
+import Control.Applicative ((<$>), (<*))
 
 data JSON = JStr String
-          | JInt Int
-          | JFloat Float
+          | JInt Integer
+          | JFloat Double
           | JBool Bool
           | JNull
           | JArr [JSON]
           | JObj [(String, JSON)]
           deriving Show
 
-jsonFile = jsonItem
-jsonItem = object <|> array <|> value
+jsonFile = P.whiteSpace lang >> jsonItem <* eof
+jsonItem = P.lexeme lang (jObject <|> jArray <|> value)
 
 value =     jstring
-        <|> try int
-        <|> try float
-        <|> bool
+        <|> try jint
+        <|> try jfloat
+        <|> jbool
         <|> jnull
         <?> "JSON value"
 
-float = do start <- many1 digit
-           char '.'
-           rest <- many digit
-           let numStr = start ++ '.':rest
-           return $ JFloat . read $ numStr
-           
-int = JInt . read <$> many1 digit
-bool =     (string "true" >> return (JBool True))
-       <|> (string "false" >> return (JBool False))
-jnull = string "null" >> return JNull
-jstring = do char '"'
-             body <- many quotedChar
-             char '"'
-             return $ JStr body
-  where quotedChar = noneOf "\"\\"
-                     <|> (string "\\\"" >> return '"')
-                     <|> (string "\\\\" >> return '\\')
-
-object = do char '{'
-            elements <- objElem `sepBy` char ','
-            char '}'
-            return $ JObj elements
-         <?> "JSON object"
+jfloat = JFloat <$> P.float lang
+jint = JInt <$> P.integer lang
+jbool =    (P.symbol lang "true" >> return (JBool True))
+       <|> (P.symbol lang "false" >> return (JBool False))
+jnull = P.symbol lang "null" >> return JNull
+jstring = JStr <$> P.stringLiteral lang
+  
+jObject = JObj <$> P.braces lang (P.commaSep lang objElem) <?> "JSON object"
   where objElem = do JStr key <- jstring
-                     char ':'
+                     P.colon lang
                      val <- jsonItem
                      return (key, val)
 
-array = do char '['
-           elements <- jsonItem `sepBy` char ','
-           char ']'
-           return $ JArr elements
-        <?> "JSON array"
+jArray = JArr <$> P.brackets lang (P.commaSep lang jsonItem) <?> "JSON array"
 
 parseJSON :: String -> Either ParseError JSON
 parseJSON = parse jsonFile "(unknown)" 
+
+lang = P.makeTokenParser haskellDef
