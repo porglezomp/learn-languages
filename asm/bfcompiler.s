@@ -23,12 +23,10 @@ read:   mov r0, #0 /* stdin */
 
 main:   /* If we read zero bytes, we're at EOF */
         cmp r3, #0
-        beq _exit        
+        beq _exit
 
         /* Load a byte from the text buffer */
         ldrb r5, [fp, r4]
-        /* The next syscall will be a write, so set it up once! */
-        mov r7, #4
         /* Switch to decide what instruction to emit (if any) */
         cmp r5, #'<'
         beq l_op
@@ -72,15 +70,17 @@ read_op:
         ldr r1, =readop
         ldr r2, =readoplen
         b emit
-        
+
 write_op:
         ldr r1, =writeop
         ldr r2, =writeoplen
 emit:   mov r0, #1
+      	mov r7, #4
         svc #0
         b next_char
 
 emit_open:
+	      mov r7, #4
         mov r0, #1
         ldr r1, =open1
         ldr r2, =open1len
@@ -102,18 +102,19 @@ emit_open:
 
         push {r8}
         add r8, #1
-        b next_char 
+        b next_char
 
 emit_close:
         pop {r8}
 
+	      mov r7, #4
         mov r0, #1
         ldr r1, =close1
         ldr r2, =close1len
         svc #0
 
         bl printhex
-        
+
         mov r0, #1
         ldr r1, =close2
         ldr r2, =close2len
