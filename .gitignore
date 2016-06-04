@@ -6,3 +6,4 @@ doc/
 *.hi
 *.o
 haskell/dist
+asm/BFC
