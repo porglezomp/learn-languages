@@ -1,9 +1,9 @@
 target/
 *.lock
+*.swp
 doc/
 
 *.ibc
 *.hi
 *.o
 haskell/dist
-asm/BFC
