@@ -86,14 +86,14 @@ emit_open:
         ldr r2, =open1len
         svc #0
 
-        bl printhex
+        bl printsym
 
         mov r0, #1
         ldr r1, =open2
         ldr r2, =open2len
         svc #0
 
-        bl printhex
+        bl printsym
 
         mov r0, #1
         ldr r1, =open3
@@ -113,14 +113,14 @@ emit_close:
         ldr r2, =close1len
         svc #0
 
-        bl printhex
+        bl printsym
 
         mov r0, #1
         ldr r1, =close2
         ldr r2, =close2len
         svc #0
 
-        bl printhex
+        bl printsym
 
         mov r0, #1
         ldr r1, =close3
@@ -129,19 +129,18 @@ emit_close:
 
         b next_char
 
-printhex:
+printsym:
         mov r2, #1
         mov r10, #28
-hexloop:mov r9, r8
-        asr r9, r10
-        and r9, #0xF
-        ldr r1, =hexdigits
-        add r1, r9
+symloop:mov r1, r8
+        asr r1, r10
+        and r1, #0xF
+        add r1, #'A'
         mov r0, #1
         svc #0
         sub r10, #4
         cmp r10, #-4
-        bne hexloop
+        bne symloop
 
         mov pc, lr
 
@@ -172,7 +171,6 @@ writeop: .ascii "mov r0, #1\nmov r1, r3\nmov r2, #1\nmov r7, #4\nsvc #0\n"
 writeoplen = . - writeop
 readop: .ascii "mov r0, #0\nmov r1, r3\nmov r2, #1\nmov r7, #3\nsvc #0\n"
 readoplen = . - readop
-hexdigits: .ascii "0123456789ABCDEF"
 open1: .ascii "begin_"
 open1len = . - open1
 open2: .ascii ":\nldrb r4, [r3]\ncmp r4, #0\nbeq end_"
