@@ -155,9 +155,9 @@ _exit:
         mov r7, #1
         svc #0
 
-header: .ascii ".globl _start\n.text\n_start:\nldr r3, =tape\n"
+header: .ascii ".globl _start\n.text\n_start:\nldr r3, =40000\nsub r3, sp, r3\n"
 headerlen = . - header
-footer: .ascii "mov r0, #0\nmov r7, #1\nsvc #0\n.data\ntape: .space 40000\n"
+footer: .ascii "mov r0, #0\nmov r7, #1\nsvc #0\n"
 footerlen = . - footer
 left: .ascii "sub r3, #1\n"
 leftlen = . - left
