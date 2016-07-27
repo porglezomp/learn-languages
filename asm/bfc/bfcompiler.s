@@ -80,7 +80,7 @@ emit:   mov r0, #1
         b next_char
 
 emit_open:
-	      mov r7, #4
+	mov r7, #4
         mov r0, #1
         ldr r1, =open1
         ldr r2, =open1len
@@ -107,7 +107,7 @@ emit_open:
 emit_close:
         pop {r8}
 
-	      mov r7, #4
+	mov r7, #4
         mov r0, #1
         ldr r1, =close1
         ldr r2, =close1len
