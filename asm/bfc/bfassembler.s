@@ -15,6 +15,11 @@ SEEK_END	= 2
 
 INSTR_SIZE	= 4
 
+/*
+This program takes a BF program on stdin, and writes an ELF executable to
+stdout. (Note that it requires that stdout be seekable.)
+*/
+
 _start:
 	mov	fp, sp
 copy_elf_header:
@@ -25,7 +30,8 @@ copy_elf_header:
 	svc	#0
 
 get_char:
-	// Read a single character
+	// We read characters one-by-one, and pick what code to generate based
+	// on that character
 	mov	r0, #FD_stdin
 	ldr	r1, =buf
 	mov	r2, #1
@@ -37,7 +43,7 @@ get_char:
 
 	// Mark r1 as un-initialized
 	mov	r1, #0
-	// Switch on the input character
+	// Switch on the input character, and set the output buffer and length
 	ldr	r0, =buf
 	ldrb	r0, [r0]
 	cmp	r0, #'>'
@@ -65,13 +71,21 @@ get_char:
 	cmp	r0, #']'
 	beq	write_close
 
-	// Write the code if
+	// Write the code chunk if it was initialized to a nonzero value
 	cmp	r1, #0
 	movne	r0, #FD_stdout
 	movne	r7, #SYS_write
 	svcne	#0
 
 	b	get_char
+
+	// Write [ and ] are the most interesting part of this. Since we have
+	// to work based on offsets, we aren't able to know where to jump to
+	// until we generate later code. This means that we have to backtrack.
+	// In order to do this, we tell() the current location in the file, and
+	// push that onto the stack. Then, when we are running write_close, we
+	// can pop that location off the stack and come back and fix-up the
+	// dummy offset that we had originally written.
 
 write_open:
 	bl	tell
@@ -88,9 +102,14 @@ write_open:
 write_close:
 	bl	tell
 	pop	{r4}
+	// If sp > fp, we've popped too many braces and have a syntax error,
+	// and also if we don't stop this soon then we can underflow the stack.
 	cmp	sp, fp
 	bgt	_fail
-	// (source - target - 8) / 4
+	// Offset is: (source - target)/4 - 2
+	// This is because all branches are word-aligned (4 byte) and have an
+	// offset because of decode pipelining, so we have to compensate for
+	// that.
 	sub	r5, r4, r0
 	asr	r5, #2
 	sub	r5, #1
@@ -113,7 +132,8 @@ write_close:
 	mov	r7, #SYS_lseek
 	svc	#0
 
-	// (target - source - 8) / 4
+	// (target - source)/4 - 2
+	// = -other_offset - 4
 	rsb	r5, r5, #0
 	sub	r5, #4
 
@@ -143,7 +163,7 @@ write_exit:
 	svc	#0
 
 adjust_size:
-	// Use lseek to get the size of the file
+	// Use tell() to get the size of the file
 	bl	tell
 	ldr	r1, =buf
 	str	r0, [r1]
@@ -167,8 +187,11 @@ adjust_size:
 	svc	#0
 
 _exit:
+	// If sp isn't fp, then there are mismatched braces (because there were
+	// an unequal number of push/pop calls)
 	cmp	sp, fp
 	bne	_fail
+	// We also copy this exit code into our output programs
 output_exit:
 	mov	r0, #0
 	mov	r7, #SYS_exit
@@ -176,6 +199,7 @@ output_exit:
 output_exitsize = . - _exit
 
 _fail:
+	// We get here if there's a mismatched brace, so we print an error
 	mov	r0, #FD_stdout
 	adr	r1, bad_brace_msg
 	mov	r2, #bad_brace_msg_size
@@ -187,6 +211,7 @@ _fail:
 	svc	#0
 
 tell:
+	// This seeks with no offset, to make lseek return the absolue position
 	mov	r0, #FD_stdout
 	mov	r1, #0
 	mov	r2, #SEEK_CUR
