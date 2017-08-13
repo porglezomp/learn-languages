@@ -11,6 +11,9 @@ SYS_lseek	= 19
 
 SEEK_SET	= 0
 SEEK_CUR	= 1
+SEEK_END	= 2
+
+INSTR_SIZE	= 4
 
 _start:
 copy_elf_header:
@@ -59,7 +62,7 @@ get_char:
 	beq	write_open
 
 	cmp	r0, #']'
-	beq	write_closed
+	beq	write_close
 
 	// Write the code if
 	cmp	r1, #0
@@ -70,8 +73,64 @@ get_char:
 	b	get_char
 
 write_open:
-write_closed:
-	udf	16
+	bl	tell
+	push	{r0}
+
+	mov	r0, #FD_stdout
+	adr	r1, output_open
+	mov	r2, #output_open_size
+	mov	r7, #SYS_write
+	svc	#0
+
+	b	get_char
+
+write_close:
+	bl	tell
+	pop	{r4}
+	// (source - target - 8) / 4
+	sub	r5, r4, r0
+	asr	r5, #2
+	sub	r5, #1
+
+	// Write the ] with computed offset
+	mov	r0, #FD_stdout
+	ldr	r1, =buf
+	str	r5, [r1]
+	// ea<offset> is the encoding for b
+	mov	r6, #0xea
+	strb	r6, [r1, #3]
+	mov	r2, #INSTR_SIZE
+	mov	r7, #SYS_write
+	svc	#0
+
+	// Seek to the [ for fixup
+	mov	r0, #FD_stdout
+	add	r1, r4, #INSTR_SIZE * 2
+	mov	r2, #SEEK_SET
+	mov	r7, #SYS_lseek
+	svc	#0
+
+	// (target - source - 8) / 4
+	rsb	r5, r5, #0
+	sub	r5, #4
+
+	mov	r0, #FD_stdout
+	ldr	r1, =buf
+	str	r5, [r1]
+	// 0a<offset> is the encoding for beq
+	mov	r6, #0x0a
+	strb	r6, [r1, #3]
+	mov	r2, #INSTR_SIZE
+	mov	r7, #SYS_write
+	svc	#0
+
+	mov	r0, #FD_stdout
+	mov	r1, #0
+	mov	r2, #SEEK_END
+	mov	r7, #SYS_lseek
+	svc	#0
+
+	b	get_char
 
 write_exit:
 	mov	r0, #FD_stdout
@@ -82,11 +141,7 @@ write_exit:
 
 adjust_size:
 	// Use lseek to get the size of the file
-	mov	r0, #FD_stdout
-	mov	r1, #0
-	mov	r2, #SEEK_CUR
-	mov	r7, #SYS_lseek
-	svc	#0
+	bl	tell
 	ldr	r1, =buf
 	str	r0, [r1]
 
@@ -94,6 +149,7 @@ adjust_size:
 	mov	r0, #FD_stdout
 	mov	r1, #fsizeoff
 	mov	r2, #SEEK_SET
+	mov	r7, #SYS_lseek
 	svc	#0
 
 	// Write the correct file size twice
@@ -113,6 +169,15 @@ output_exit:
 	mov	r7, #SYS_exit
 	svc	#0
 output_exitsize = . - _exit
+
+tell:
+	mov	r0, #FD_stdout
+	mov	r1, #0
+	mov	r2, #SEEK_CUR
+	mov	r7, #SYS_lseek
+	svc	#0
+	mov	pc, lr
+	
 
 // NOTE: This code is just to be copied into the output! /////////////////////
 
@@ -158,7 +223,14 @@ output_write:
 	svc	#0
 output_write_size = . - output_write
 
-// @Todo: Could we use /proc/self/exe to steal the ELF header?
+output_open:
+	ldr	r0, [sp]
+	cmp	r0, #0
+	beq	dummy_label
+output_open_size = . - output_open
+dummy_label:
+	nop
+
 	.align	4
 ehdr:	.byte	0x7f, 'E', 'L', 'F', 1, 1, 1, 0
 	.space	8		// 08
