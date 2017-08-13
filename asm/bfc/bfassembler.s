@@ -16,6 +16,7 @@ SEEK_END	= 2
 INSTR_SIZE	= 4
 
 _start:
+	mov	fp, sp
 copy_elf_header:
 	mov	r0, #FD_stdout
 	adr	r1, ehdr
@@ -87,6 +88,8 @@ write_open:
 write_close:
 	bl	tell
 	pop	{r4}
+	cmp	sp, fp
+	bgt	_fail
 	// (source - target - 8) / 4
 	sub	r5, r4, r0
 	asr	r5, #2
@@ -164,11 +167,24 @@ adjust_size:
 	svc	#0
 
 _exit:
+	cmp	sp, fp
+	bne	_fail
 output_exit:
 	mov	r0, #0
 	mov	r7, #SYS_exit
 	svc	#0
 output_exitsize = . - _exit
+
+_fail:
+	mov	r0, #FD_stdout
+	adr	r1, bad_brace_msg
+	mov	r2, #bad_brace_msg_size
+	mov	r7, #SYS_write
+	svc	#0
+
+	mov	r0, #1
+	mov	r7, #SYS_exit
+	svc	#0
 
 tell:
 	mov	r0, #FD_stdout
@@ -226,10 +242,8 @@ output_write_size = . - output_write
 output_open:
 	ldr	r0, [sp]
 	cmp	r0, #0
-	beq	dummy_label
+	beq	0
 output_open_size = . - output_open
-dummy_label:
-	nop
 
 	.align	4
 ehdr:	.byte	0x7f, 'E', 'L', 'F', 1, 1, 1, 0
@@ -260,6 +274,9 @@ phdrsize = . - phdr
 fullsize = . - ehdr
 fsizeoff = fsize - ehdr
 msizeoff = msize - ehdr
+
+bad_brace_msg:	.ascii "Bad []s\n"
+bad_brace_msg_size = . - bad_brace_msg
 
 .data
 buf:	.word	0x0
