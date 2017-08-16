@@ -25,4 +25,8 @@ clean:
 	rm -f BFC
 	rm -f BFA
 
+install: BFA BFC
+	cp BFA /usr/local/bin/
+	cp BFC /usr/local/bin/
+
 .PHONY:

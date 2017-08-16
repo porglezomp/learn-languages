@@ -8,6 +8,7 @@ SYS_exit	= 1
 SYS_read	= 3
 SYS_write	= 4
 SYS_lseek	= 19
+SYS_fchmod	= 94
 
 SEEK_SET	= 0
 SEEK_CUR	= 1
@@ -126,11 +127,9 @@ write_close:
 	svc	#0
 
 	// Seek to the [ for fixup
-	mov	r0, #FD_stdout
 	add	r1, r4, #INSTR_SIZE * 2
 	mov	r2, #SEEK_SET
-	mov	r7, #SYS_lseek
-	svc	#0
+	bl	seek
 
 	// (target - source)/4 - 2
 	// = -other_offset - 4
@@ -147,11 +146,9 @@ write_close:
 	mov	r7, #SYS_write
 	svc	#0
 
-	mov	r0, #FD_stdout
 	mov	r1, #0
 	mov	r2, #SEEK_END
-	mov	r7, #SYS_lseek
-	svc	#0
+	bl	seek
 
 	b	get_char
 
@@ -169,11 +166,9 @@ adjust_size:
 	str	r0, [r1]
 
 	// Seek to the filesize field of the header
-	mov	r0, #FD_stdout
 	mov	r1, #fsizeoff
 	mov	r2, #SEEK_SET
-	mov	r7, #SYS_lseek
-	svc	#0
+	bl	seek
 
 	// Write the correct file size twice
 	mov	r0, #FD_stdout
@@ -184,6 +179,13 @@ adjust_size:
 	mov	r0, #FD_stdout
 	ldr	r1, =buf
 	mov	r2, #4
+	svc	#0
+
+make_exec:
+	mov	r0, #FD_stdout
+	mov	r1, #0750
+	orr	r1, #0005
+	mov	r7, #SYS_fchmod
 	svc	#0
 
 _exit:
@@ -212,9 +214,10 @@ _fail:
 
 tell:
 	// This seeks with no offset, to make lseek return the absolue position
-	mov	r0, #FD_stdout
 	mov	r1, #0
 	mov	r2, #SEEK_CUR
+seek:
+	mov	r0, #FD_stdout
 	mov	r7, #SYS_lseek
 	svc	#0
 	mov	pc, lr
@@ -233,17 +236,17 @@ output_right:
 output_right_size = . - output_right
 
 output_left:
-	sub	sp, #0
+	sub	sp, #1
 output_left_size = . - output_left
 
 output_plus:
-	ldrb	r0, [sp]
+	ldrsb	r0, [sp]
 	add	r0, #1
 	strb	r0, [sp]
 output_plus_size = . - output_plus
 
 output_minus:
-	ldrb	r0, [sp]
+	ldrsb	r0, [sp]
 	sub	r0, #1
 	strb	r0, [sp]
 output_minus_size = . - output_minus
