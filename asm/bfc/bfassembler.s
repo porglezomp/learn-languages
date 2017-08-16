@@ -24,11 +24,9 @@ stdout. (Note that it requires that stdout be seekable.)
 _start:
 	mov	fp, sp
 copy_elf_header:
-	mov	r0, #FD_stdout
-	adr	r1, ehdr
-	mov	r2, #fullsize
-	mov	r7, #SYS_write
-	svc	#0
+	adr	r1, prelude
+	mov	r2, #prelude_size
+	bl	write
 
 get_char:
 	// We read characters one-by-one, and pick what code to generate based
@@ -74,9 +72,7 @@ get_char:
 
 	// Write the code chunk if it was initialized to a nonzero value
 	cmp	r1, #0
-	movne	r0, #FD_stdout
-	movne	r7, #SYS_write
-	svcne	#0
+	blne	write
 
 	b	get_char
 
@@ -92,10 +88,9 @@ write_open:
 	bl	tell
 	push	{r0}
 
-	mov	r0, #FD_stdout
 	adr	r1, output_open
 	mov	r2, #output_open_size
-	mov	r7, #SYS_write
+	bl	write
 	svc	#0
 
 	b	get_char
@@ -116,15 +111,13 @@ write_close:
 	sub	r5, #1
 
 	// Write the ] with computed offset
-	mov	r0, #FD_stdout
 	ldr	r1, =buf
 	str	r5, [r1]
 	// ea<offset> is the encoding for b
 	mov	r6, #0xea
 	strb	r6, [r1, #3]
 	mov	r2, #INSTR_SIZE
-	mov	r7, #SYS_write
-	svc	#0
+	bl	write
 
 	// Seek to the [ for fixup
 	add	r1, r4, #INSTR_SIZE * 2
@@ -136,15 +129,13 @@ write_close:
 	rsb	r5, r5, #0
 	sub	r5, #4
 
-	mov	r0, #FD_stdout
 	ldr	r1, =buf
 	str	r5, [r1]
 	// 0a<offset> is the encoding for beq
 	mov	r6, #0x0a
 	strb	r6, [r1, #3]
 	mov	r2, #INSTR_SIZE
-	mov	r7, #SYS_write
-	svc	#0
+	bl	write
 
 	mov	r1, #0
 	mov	r2, #SEEK_END
@@ -153,11 +144,9 @@ write_close:
 	b	get_char
 
 write_exit:
-	mov	r0, #FD_stdout
 	adr	r1, output_exit
 	mov	r2, #output_exitsize
-	mov	r7, #SYS_write
-	svc	#0
+	bl	write
 
 adjust_size:
 	// Use tell() to get the size of the file
@@ -171,15 +160,12 @@ adjust_size:
 	bl	seek
 
 	// Write the correct file size twice
-	mov	r0, #FD_stdout
 	ldr	r1, =buf
 	mov	r2, #4
-	mov	r7, #SYS_write
-	svc	#0
-	mov	r0, #FD_stdout
+	bl	write
 	ldr	r1, =buf
 	mov	r2, #4
-	svc	#0
+	bl	write
 
 make_exec:
 	mov	r0, #FD_stdout
@@ -212,24 +198,22 @@ _fail:
 	mov	r7, #SYS_exit
 	svc	#0
 
-tell:
-	// This seeks with no offset, to make lseek return the absolue position
+
+// Syscalls shorthand packing!
+
+write:	mov	r7, #SYS_write
+	b	stdout
+tell:	// This seeks with no offset, to make lseek return the absolue position
 	mov	r1, #0
 	mov	r2, #SEEK_CUR
-seek:
+seek:	mov	r7, #SYS_lseek
+stdout:
 	mov	r0, #FD_stdout
-	mov	r7, #SYS_lseek
 	svc	#0
 	mov	pc, lr
 	
 
 // NOTE: This code is just to be copied into the output! /////////////////////
-
-output_header:
-	// Reserve 30,000 bytes
-	sub	sp, #0x7500
-	sub	sp, #0x0030
-output_header_size = . - output_header
 
 output_right:
 	add	sp, #1
@@ -274,6 +258,7 @@ output_open:
 output_open_size = . - output_open
 
 	.align	4
+prelude:
 ehdr:	.byte	0x7f, 'E', 'L', 'F', 1, 1, 1, 0
 	.space	8		// 08
 	.hword	2		// 10 Executable
@@ -302,6 +287,19 @@ phdrsize = . - phdr
 fullsize = . - ehdr
 fsizeoff = fsize - ehdr
 msizeoff = msize - ehdr
+
+output_prelude:
+	mov	r4, #0
+	// The value 30,000
+	sub	sp, #0x7500
+	sub	sp, #0x0030
+zero_loop:
+	// Zero-initialize the whole tape
+	push	{r4}
+	subs	r5, #4
+	bpl	zero_loop
+output_prelude_size = . - output_prelude
+prelude_size = . - prelude
 
 bad_brace_msg:	.ascii "Bad []s\n"
 bad_brace_msg_size = . - bad_brace_msg

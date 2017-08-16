@@ -20,13 +20,16 @@ lab: .PHONY
 strip: BFA BFC
 	$(STRIP) BFC
 	$(STRIP) BFA
+	ls -l BFA BFC | tr -s ' ' | cut -d' ' -f5,9
+
+test: BFA
+	python tester.py
+
+install: BFA BFC
+	cp BFA BFC /usr/local/bin/
 
 clean:
 	rm -f BFC
 	rm -f BFA
-
-install: BFA BFC
-	cp BFA /usr/local/bin/
-	cp BFC /usr/local/bin/
 
 .PHONY:
