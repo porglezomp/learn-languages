@@ -7,3 +7,7 @@ doc/
 *.hi
 *.o
 haskell/dist
+
+*.aux
+*.vo
+*.glob
